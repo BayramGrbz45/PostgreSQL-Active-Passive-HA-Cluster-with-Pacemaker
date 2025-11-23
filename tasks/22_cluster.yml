@@ -1,0 +1,32 @@
+---
+- name: Cluster paketlerinin kurulumu
+  ansible.builtin.package:
+    name: "{{ qdevice_packages }}"
+    state: present
+
+- name: hacluster kullanıcısının parolası ayarlanıyor
+  ansible.builtin.user:
+    name: hacluster
+    password: "{{ hacluster_user_pass | password_hash('sha512') }}"
+  notify:
+    - restart pcsd
+    - enable vmtoolsd
+
+- name: QDevice servisi kuruluyor ve başlatılıyor
+  ansible.builtin.command:
+    cmd: pcs qdevice setup model net --enable --start
+  register: qdevice_setup_result
+  changed_when: "'already configured' not in qdevice_setup_result.stdout"
+  failed_when: 
+    - qdevice_setup_result.rc != 0
+    - "'already configured' not in qdevice_setup_result.stdout"
+    
+- name: QDevice servis durumu kontrol ediliyor
+  ansible.builtin.command:
+    cmd: pcs qdevice status net
+  register: qdevice_status
+  changed_when: false
+
+- name: QDevice durum bilgisi gösteriliyor
+  ansible.builtin.debug:
+    msg: "QDevice Status: {{ qdevice_status.stdout }}"

@@ -1,0 +1,26 @@
+---
+- name: pgsql servisi oluşturulmadan önce pcs resource config durumu kontrol ediliyor
+  ansible.builtin.command: pcs resource config
+  changed_when: false
+  register: pcs_resource_config
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: pgsql servisi oluşturuluyor
+  ansible.builtin.command: >
+    pcs resource create pgsqlsvc ocf:heartbeat:pgsql
+    pgdata="/var/lib/pgsql/{{ pg_version }}/data"
+    pgctl="/usr/pgsql-{{ pg_version }}/bin/pg_ctl"
+    --group=pgsql
+  when: "'pgsqlsvc' not in pcs_resource_config.stdout"
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: pcs constraint --full durumu kontrol ediliyor
+  ansible.builtin.command: pcs constraint --full
+  changed_when: false
+  register: pcs_constraint
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: pcs_constraint çıktısı gösteriliyor
+  ansible.builtin.debug:
+    var: pcs_constraint.stdout
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"

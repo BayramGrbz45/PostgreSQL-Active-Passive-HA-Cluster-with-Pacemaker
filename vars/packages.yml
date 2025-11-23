@@ -1,0 +1,100 @@
+---
+common_package:
+  - tmux
+  - vim
+  - postfix
+  - mutt
+  - tuned
+  - pcp
+  - pcp-gui
+  - pcp-conf
+  - pcp-zeroconf
+  - pcp-system-tools
+  - pcp-testsuite
+  - pcp-pmda-systemd
+  - pcp-pmda-summary
+  - pcp-pmda-statsd
+  - pcp-pmda-sockets
+  - pcp-pmda-snmp
+  - pcp-pmda-sendmail
+  - pcp-pmda-trace
+  - pcp-pmda-rsyslog
+  - pcp-pmda-postgresql
+  - pcp-pmda-postfix
+  - pcp-pmda-mounts
+  - pcp-pmda-logger
+  - pcp-pmda-json
+  - pcp-pmda-dm
+  - pcp-pmda-dbping
+  - pcp-pmda-bpftrace
+  - pcp-pmda-bonding
+  - pcp-pmda-bcc
+  - pcp-import-collectl2pcp
+  - pcp-import-iostat2pcp
+  - pcp-import-sar2pcp
+  - pcp-export-pcp2json
+  - cockpit-pcp
+  - cockpit
+  - cockpit-bridge
+  - cockpit-composer
+  - cockpit-doc
+  - cockpit-session-recording
+  - cockpit-storaged
+  - cockpit-system
+  - tlog
+  - pcp-selinux
+  - sysstat
+  - ethtool
+  - procps-ng
+  - iptraf-ng
+  - tcpdump
+  - wireshark-cli
+  - traceroute
+  - numad
+  - numactl 
+  - numatop
+  - langpacks-tr
+  - mc
+  - yum-utils
+  - net-tools
+  - telnet
+  - chrony
+  - ipa-client
+  - wazuh-agent
+  - metricbeat
+  - sysfsutils
+  - sos
+  - bash-completion
+  - kernel-devel
+  - kernel-headers
+  - elfutils-devel
+  - libnsl
+  - policycoreutils
+  - open-vm-tools
+  - openssl-devel
+  - openldap-clients
+
+db_packages:
+  - "postgresql{{ pg_version }}-server"
+  - "postgresql{{ pg_version }}-contrib"
+  - "postgresql{{ pg_version }}-devel"
+  - "pg_stat_monitor_{{ pg_version }}"
+  - "postgresql{{ pg_version }}-plpython3"
+  - "pgaudit_{{ pg_version }}"
+  - "pgauditlogtofile_{{ pg_version }}"
+  - "pgbackrest"
+
+cluster_packages:
+  - pcs
+  - pacemaker
+  - lvm2-lockd
+  - gfs2-utils
+  - dlm
+  - fence-agents-all
+  - corosync-qdevice
+  - pcp-pmda-hacluster
+  - pcp-pmda-gfs2
+  
+qdevice_packages:
+  - pcs
+  - corosync-qnetd

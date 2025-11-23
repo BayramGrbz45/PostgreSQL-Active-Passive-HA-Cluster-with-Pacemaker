@@ -1,0 +1,40 @@
+---
+- name: PostgreSQL modülünü devre dısı bırak
+  ansible.builtin.command: dnf -qy module disable postgresql
+  args:
+    warn: false
+  ignore_errors: true
+
+- name: PostgreSQL paketlerini yükle
+  ansible.builtin.package:
+    name: "{{ db_packages }}"
+    state: present
+  notify:
+    - stop postgresql
+
+- name: /var/lib/pgsql dizininin izinlerini ayarla
+  ansible.builtin.file:
+    path: /var/lib/pgsql
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "0770"
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: tbs ve wal dizinlerinin izinlerini ayarla
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "0770"
+  loop:
+    - /tbs
+    - /wal
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: PostgreSQL initdb start
+  ansible.builtin.command:
+    cmd: "/usr/pgsql-{{ pg_version }}/bin/postgresql-{{ pg_version }}-setup initdb"
+    creates: "/var/lib/pgsql/{{ pg_version }}/data/PG_VERSION"
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"

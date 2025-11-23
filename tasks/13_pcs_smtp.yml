@@ -1,0 +1,30 @@
+---
+- name: smtp alert scriptini oluştur
+  ansible.builtin.template:
+    src: alert_smtp.sh.j2
+    dest: /var/lib/pacemaker/alert_smtp.sh
+    owner: hacluster
+    group: haclient
+    mode: "0775"
+
+- name: mevcut alert config kontrol ediliyor
+  ansible.builtin.command: pcs alert config
+  register: pcs_alert_cfg
+  changed_when: false
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: mailinfo alert oluşturuluyor
+  ansible.builtin.command: >
+    pcs alert create
+    id=mailinfo
+    path=/var/lib/pacemaker/alert_smtp.sh
+    options email_sender="{{ email_sender }}"
+  when: "'mailinfo' not in pcs_alert_cfg.stdout"
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: epostabilgi recipient ekleniyor
+  ansible.builtin.command: >
+    pcs alert recipient add epostabilgi
+    value="{{ email_recipient }}"
+  when: "'epostabilgi' not in pcs_alert_cfg.stdout"
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"

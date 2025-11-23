@@ -1,0 +1,5 @@
+---
+- import_tasks: 00_common.yml
+- import_tasks: 01_packages.yml
+- import_tasks: 21_configuration.yml
+- import_tasks: 22_cluster.yml

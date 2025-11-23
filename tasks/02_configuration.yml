@@ -1,0 +1,81 @@
+---
+- name: Storage Edit
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/journald.conf
+    regexp: '^#?Storage='
+    line: 'Storage=persistent'
+    state: present
+    backup: true
+  notify:
+    - restart systemd-journald
+
+- name: DefaultLimitNOFILE Edit
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^#?DefaultLimitNOFILE='
+    line: 'DefaultLimitNOFILE=524288'
+    state: present
+    backup: true
+  notify:
+    - systemd daemon reload
+
+- name: DefaultLimitNPROC Edit
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^#?DefaultLimitNPROC='
+    line: 'DefaultLimitNPROC=524288'
+    state: present
+    backup: true
+  notify:
+    - systemd daemon reload
+
+- name: Deploy chrony.conf
+  ansible.builtin.template:
+    src: chrony.conf.j2
+    dest: /etc/chrony.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - restart chronyd
+
+- name: smtp relay
+  ansible.builtin.command:
+    cmd: postconf -e "relayhost={{ relay_host }}"
+  notify:
+    - restart postfix
+
+- name: Update /etc/hosts from inventory
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    block: |
+      {% for h in groups['all'] %}
+      {{ hostvars[h].ansible_host }} {{ h }}.{{ domain }} {{ h }}
+      {% endfor %}
+
+- name: Toplam RAM'in %90'ını G cinsinden hesapla
+  set_fact:
+    memorylimit: "{{ (((ansible_facts.memtotal_mb | int) * 0.90) / 1024) | round(method='ceil') | int }}G"
+
+- name: Pacemaker / Corosync ve user.slice CPU/Mem limitleri
+  ansible.builtin.command: "{{ item }}"
+  loop:
+# Pacemaker servis CPU & Memory
+    - "systemctl set-property pacemaker.service CPUAccounting=yes"
+    - "systemctl set-property pacemaker.service CPUQuota=1000%"
+    - "systemctl set-property pacemaker.service MemoryAccounting=yes"
+    - "systemctl set-property pacemaker.service MemoryLimit={{ memorylimit }}"
+# Corosync servis CPU
+    - "systemctl set-property corosync.service CPUAccounting=yes"
+    - "systemctl set-property corosync.service CPUQuota=100%"
+    # user.slice kalıcı CPU / Memory limitleri
+    - "systemctl set-property user.slice CPUAccounting=yes"
+    - "systemctl set-property user.slice CPUQuota=100%"
+    - "systemctl set-property user.slice MemoryAccounting=yes"
+    - "systemctl set-property user.slice MemoryLimit=1G"
+# user.slice runtime CPU / Memory limitleri (reboot sonrası uçacak)
+    - "systemctl --runtime set-property user.slice CPUAccounting=yes"
+    - "systemctl --runtime set-property user.slice CPUQuota=100%"
+    - "systemctl --runtime set-property user.slice MemoryAccounting=yes"
+    - "systemctl --runtime set-property user.slice MemoryLimit=1G"
+

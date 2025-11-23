@@ -1,0 +1,12 @@
+---
+- name: QDevice Kurulumu
+  hosts: qdevicesrv
+  vars_files:
+    - vars/main.yml
+  become: true
+  become_user: root
+  gather_facts: true
+  handlers:
+    - import_tasks: handlers/main.yml
+  tasks:
+    - import_tasks: tasks/20_main.yml

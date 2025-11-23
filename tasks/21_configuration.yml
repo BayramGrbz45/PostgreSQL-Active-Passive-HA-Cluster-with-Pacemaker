@@ -1,0 +1,24 @@
+---
+- name: Deploy chrony.conf
+  ansible.builtin.template:
+    src: chrony.conf.j2
+    dest: /etc/chrony.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - restart chronyd
+
+- name: smtp relay
+  ansible.builtin.command:
+    cmd: postconf -e "relayhost={{ relay_host }}"
+  notify:
+    - restart postfix
+
+- name: Update /etc/hosts from inventory
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    block: |
+      {% for h in groups['all'] %}
+      {{ hostvars[h].ansible_host }} {{ h }}.{{ domain }} {{ h }}
+      {% endfor %}

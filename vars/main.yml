@@ -1,0 +1,22 @@
+---
+
+pg_version: "16"
+
+cluster_name: server
+
+vcenter_ip: 10.10.10.2
+vmware_user: VMWARE_USER
+vmware_pass: "VMWARE_PASS"
+
+cluster_ipaddr: "192.168.1.14"
+cluster_netmask: "24"
+backup_ipaddr: "192.168.1.15"
+backup_netmask: "24"
+
+hacluster_user_pass: "GucluBirParola123"
+
+domain: bayram.local
+
+relay_host: mail.bayram.local
+email_sender: "{{ cluster_name }}@{{ domain }}"
+email_recipient: "sysadmin@{{ domain }}"

@@ -1,0 +1,29 @@
+---
+- name: pgsqlsrv hostlarını -priv ve VM isimleri olacak şekilde türet
+  ansible.builtin.set_fact:
+    pgsqlsrv_priv: "{{ groups['pgsqlsrv'] | map('regex_replace', '$', '-priv') | list }}"
+    pgsqlsrv_vm: "{{ groups['pgsqlsrv'] | map('upper') | list }}"
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: STONITH için pcmk_host_map stringini oluştur
+  ansible.builtin.set_fact:
+    pcmk_host_map: >-
+      {{
+        pgsqlsrv_priv
+        | zip(pgsqlsrv_vm)
+        | map('join', ':')
+        | join(';')
+      }}
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+  
+- name: STONITH için fence ayarları yapılıyor
+  ansible.builtin.command: >
+    pcs stonith create fence_pgsql fence_vmware_soap
+    pcmk_monitor_timeout=180s power_timeout=180
+    ip="{{ vcenter_ip }}"
+    username="{{ vmware_user }}"
+    password="{{ vmware_pass }}"
+    ssl=on ssl_insecure=on
+    pcmk_host_map='{{ pcmk_host_map }}'
+  register: fence
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"

@@ -1,0 +1,11 @@
+---
+db_volumes:
+  - name: pgsql
+    pvs: '/dev/sdb'
+    stripes: 1
+  - name: wal
+    pvs: '/dev/sdc,/dev/sdd,/dev/sde,/dev/sdf'
+    stripes: 4
+  - name: tbs
+    pvs: '/dev/sdg,/dev/sdh,/dev/sdi,/dev/sdj'
+    stripes: 4

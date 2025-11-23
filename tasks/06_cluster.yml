@@ -1,0 +1,52 @@
+---
+- name: hacluster kullanıcısının parolası ayarlanıyor
+  ansible.builtin.user:
+    name: hacluster
+    password: "{{ hacluster_user_pass | password_hash('sha512') }}"
+  notify:
+    - restart pcsd
+
+- name: pgsqlsrv hostlarını -priv ile türet
+  ansible.builtin.set_fact:
+    pgsqlsrv_priv: "{{ groups['pgsqlsrv'] | map('regex_replace', '$', '-priv') | list }}"
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: Cluster oluşturmak için yetkilendirmeler yapılıyor
+  ansible.builtin.command: >
+    pcs host auth {{ pgsqlsrv_priv | join(' ') }} -u hacluster -p {{ hacluster_user_pass }}
+  register: cluster_auth
+  changed_when: "'Authorized' in cluster_auth.stdout"
+  retries: 3
+  delay: 10
+  until: cluster_auth.rc == 0
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: Cluster oluşturuluyor
+  ansible.builtin.command: >
+    pcs cluster setup {{ cluster_name }} {{ pgsqlsrv_priv | join(' ') }}
+  register: create_cluster
+  changed_when: "'successfully set up' in create_cluster.stdout"
+  ignore_errors: true
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: Cluster etkinleştiriliyor
+  ansible.builtin.command: pcs cluster enable --all
+  register: activate_cluster
+  changed_when: "'Cluster Enabled' in activate_cluster.stdout"
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: Cluster başlatılıyor
+  ansible.builtin.command: >
+    pcs cluster start --all --request-timeout=180 --wait=180
+  register: start_cluster
+  changed_when: "'Starting Cluster' in start_cluster.stdout"
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: Cluster totem token değeri ayarlanıyor
+  ansible.builtin.command: pcs cluster config update totem token=10000
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: Recovery sonrası kaynakların kontrolsüz taşınması engelleniyor
+  ansible.builtin.command: pcs resource defaults update resource-stickiness=100
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+

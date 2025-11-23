@@ -1,0 +1,46 @@
+---
+- name: pgsqlsrv hostlarını -priv ve VM isimleri olacak şekilde türet
+  ansible.builtin.set_fact:
+    pgsqlsrv_priv: "{{ groups['pgsqlsrv'] | map('regex_replace', '$', '-priv') | list }}"
+    pgsqlsrv_vm: "{{ groups['pgsqlsrv'] | map('upper') | list }}"
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: STONITH için pcmk_host_map stringini oluştur (dinamik)
+  ansible.builtin.set_fact:
+    pcmk_host_map: >-
+      {{
+        pgsqlsrv_priv | zip(pgsqlsrv_vm)
+        | map('join', ':')
+        | join(';')
+      }}
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: pgsql cluster IP oluşturulmadan önce pcs resource config kontrolü yapılıyor
+  ansible.builtin.command: pcs resource config
+  changed_when: false
+  register: cluster_ip_cfg
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: PostgreSQL için cluster IP oluşturuluyor
+  ansible.builtin.command: >
+    pcs resource create cluster_ip IPaddr2
+    ip="{{ cluster_ipaddr }}"
+    cidr_netmask="{{ cluster_netmask }}"
+    --group=pgsql --wait=60
+  when: "'cluster_ip' not in cluster_ip_cfg.stdout"
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: pgsql backup IP oluşturulmadan önce pcs resource config kontrolü yapılıyor
+  ansible.builtin.command: pcs resource config
+  changed_when: false
+  register: backup_ip_cfg
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: PostgreSQL backup IP oluşturuluyor
+  ansible.builtin.command: >
+    pcs resource create backup_ip IPaddr2
+    ip="{{ backup_ipaddr }}"
+    cidr_netmask="{{ backup_netmask }}"
+    --group=pgsql --wait=60
+  when: "'backup_ip' not in backup_ip_cfg.stdout"
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"

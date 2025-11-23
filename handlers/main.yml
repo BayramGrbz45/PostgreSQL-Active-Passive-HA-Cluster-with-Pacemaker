@@ -1,0 +1,61 @@
+---
+- name: restart chronyd
+  ansible.builtin.service:
+    name: chronyd
+    enabled: true
+    state: restarted
+
+- name: restart systemd-journald
+  ansible.builtin.systemd:
+    name: systemd-journald
+    state: restarted
+
+- name: systemd daemon reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: enable vmtoolsd
+  ansible.builtin.service:
+    name: vmtoolsd
+    state: restarted
+    enabled: true
+
+- name: restart postfix
+  ansible.builtin.service:
+    name: postfix
+    enabled: true
+    state: restarted
+
+- name: restart pcsd
+  ansible.builtin.service:
+    name: pcsd
+    enabled: true
+    state: restarted
+
+- name: stop postgresql
+  ansible.builtin.service:
+    name: postgresql-{{ pg_version }}
+    enabled: false
+    state: stopped
+
+- name: stop firewalld
+  ansible.builtin.service:
+    name: firewalld
+    enabled: false
+    state: stopped
+
+- name: restart tuned
+  ansible.builtin.service:
+    name: tuned
+    enabled: true
+    state: restarted
+
+- name: postgresql tuned profile
+  ansible.builtin.command:
+    cmd: "/usr/sbin/tuned-adm profile tuned.postgresql"
+
+- name: restart corosync-qdevice
+  ansible.builtin.service:
+    name: corosync-qdevice
+    enabled: true
+    state: restarted

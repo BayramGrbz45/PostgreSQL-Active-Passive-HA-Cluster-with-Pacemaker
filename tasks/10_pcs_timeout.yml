@@ -1,0 +1,15 @@
+---
+- name: varsayilan zaman asimi stonith-timeout ayarlaniyor
+  ansible.builtin.command: >
+    pcs property set stonith-timeout=60s
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: priority-fencing-delay degeri ayarlaniyor
+  ansible.builtin.command: >
+    pcs property set priority-fencing-delay=30s
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: varsayilan resource priority ayarlaniyor
+  ansible.builtin.command: >
+    pcs resource defaults update priority=1
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"

@@ -1,0 +1,183 @@
+# PostgreSQL High Availability Cluster Kurulumu
+
+## 📋 Genel Bakış
+
+Bu Ansible playbook koleksiyonu, **PostgreSQL ** için yüksek erişilebilirlik (HA) cluster kurulumunu otomatikleştirir. Sistem aşağıdaki bileşenleri içerir:
+
+- **2-node PostgreSQL Cluster** (Pacemaker/Corosync)
+- **QDevice** ile quorum yönetimi
+- **VMware Fencing** (STONITH)
+- **LVM Lock Management** (lvmlockd)
+- **Otomatik Failover** ve monitoring
+
+## 🏗️ Mimari
+
+### Cluster Yapısı
+```
+┌─────────────────┐    ┌─────────────────┐
+│   PostgreSQL    │    │   PostgreSQL    │
+│     Node 1      │    │     Node 2      │
+│                 │    │                 │
+│ • Pacemaker     │    │ • Pacemaker     │
+│ • Corosync      │    │ • Corosync      │
+│ • PostgreSQL    │    │ • PostgreSQL    │
+│ • LVM Locking   │    │ • LVM Locking   │
+└────────┬────────┘    └────────┬────────┘
+         │                      │
+         └──────────┬───────────┘
+                    │
+            ┌───────▼────────┐
+            │   QDevice      │
+            │    Node        │
+            │                │
+            │ • Corosync     │
+            │ • QNetd        │
+            └────────────────┘
+```
+
+### Storage Mimarisi
+|  Volume  | Physical Disks                      | Striping  | Kullanım Amacı        |
+|----------|-------------------------------------|-----------|-----------------------|
+| vg_pgsql | /dev/sdb                            | 1 stripe  | PostgreSQL data files |
+| vg_wal   | /dev/sdc,/dev/sdd,/dev/sde,/dev/sdf | 4 stripes | WAL logs              |
+| vg_tbs   | /dev/sdg,/dev/sdh,/dev/sdi,/dev/sdj | 4 stripes | Tablespaces           |
+
+## 📁 Dosya Yapısı
+
+```
+.
+├── inventory/
+│   └── hosts
+├── playbook/
+│   └── deploy-postgresql-cluster.yml    # Ana cluster playbook
+│   └── deploy-qdevice-node.yml          # QDevice playbook
+├── vars/
+│   └── main.yml                         # Değişkenler
+├── inventory/
+│   └── hosts 
+├── handlers/
+│   └── main.yml                         # Handler'lar
+└── tasks/
+    ├── main.yml                    # PostgreSQL
+    ├── 00_common.yml               # Temel sistem ayarları
+    ├── 01_packages.yml             # Paket kurulumları
+    ├── 02_configuration.yml        # Sistem konfigürasyonu
+    ├── 03_lvm.yml                  # LVM yapılandırması
+    ├── 04_psql.yml                 # PostgreSQL kurulumu
+    ├── 05_tuned.yml                # Performance tuning
+    ├── 06_cluster.yml              # Cluster kurulumu
+    ├── 07_fence.yml                # Fencing ayarları
+    ├── 08_qdevice.yml              # QDevice entegrasyonu
+    ├── 09_pcs_ip.yml               # IP kaynakları
+    ├── 10_pcs_timeout.yml          # Timeout ayarları
+    ├── 11_pcs_lvm.yml              # LVM kaynakları
+    ├── 12_pcs_pgsql.yml            # PostgreSQL kaynakları
+    └── 13_pcs_smtp.yml             # SMTP alert'leri
+    └── 20_main.yml                 # QDevice
+    └── 21_configuration.yml        # QDevice  Sistem konfigürasyonu
+    └── 22_cluster.yml              # QDevice  kurulumu   
+```
+
+## 🚀 Hızlı Başlangıç
+
+### Ön Gereksinimler
+
+1. **Ansible ** kurulu olmalı
+
+2. **Inventory dosyası yapılandırılmalı:
+```bash
+vim inventory/hosts
+```
+
+3. **Değişkenleri güncelle:**
+```bash
+vim vars/main.yml
+```
+
+4. **QDevice node'unu kur:**
+```bash
+ansible-playbook -i inventory/hosts deploy-qdevice-node.yml -kK
+```
+
+5. **PostgreSQL cluster'ı kur:**
+```bash
+ansible-playbook -i inventory/hosts deploy-postgresql-cluster.yml -kK
+```
+
+## 🧪 Test Senaryoları
+
+### 1. Cluster Sağlık Kontrolü
+```bash
+# Cluster durumu
+pcs status
+
+# Kaynak durumu
+pcs resource show
+
+# Quorum durumu
+pcs quorum status
+```
+
+### 2. Failover Testi
+```bash
+# Manuel failover
+pcs resource move pgsqlsvc
+
+# Maintenance modu
+pcs property set maintenance-mode=true
+```
+
+### 3. Fencing Testi
+```bash
+# Fencing device test
+pcs stonith fence pgsql01-priv
+```
+
+## 📊 Bakım
+
+### Bakım Komutları
+```bash
+# Cluster bakımı
+pcs cluster stop --all
+pcs cluster start --all
+
+# Kaynak temizleme
+pcs resource cleanup
+
+
+## 🐛 Sorun Giderme
+
+### Sık Karşılaşılan Sorunlar
+
+1. **Quorum Kaybı**
+   ```bash
+   pcs quorum update expected-votes=2
+   ```
+
+2. **Fencing Sorunları**
+   ```bash
+   pcs stonith confirm <node_name>
+   ```
+
+3. **LVM Lock Sorunları**
+   ```bash
+   lvmlockctl --stop-lockspaces
+   lvmlockctl --start-lockspaces
+   ```
+
+## 📈 Performans Optimizasyonları
+
+### Tuned Profili
+- **tuned.postgresql** özel profili
+
+## 📄 Lisans
+
+MIT License
+
+## 🆘 Destek
+
+İletişim: **BayramGrbz45** - bayramgrbz45@gmail.com
+
+---
+
+**Önemli Not:** Production ortamında kullanmadan önce mutlaka test ortamında tüm senaryoları test edin.

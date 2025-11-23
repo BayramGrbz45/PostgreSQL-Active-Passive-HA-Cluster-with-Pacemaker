@@ -1,0 +1,30 @@
+---
+- name: start corosync-qdevice
+  ansible.builtin.service:
+    name: corosync-qdevice
+    enabled: true
+    state: started
+
+- name: qdevicesrv hostlarını -priv ile türet
+  ansible.builtin.set_fact:
+    qdevicesrv_priv: "{{ groups['qdevicesrv'] | map('regex_replace', '$', '-priv') | list }}"
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: qdevice sunucusuna erişim yetkisi veriliyor
+  ansible.builtin.command: >
+    pcs host auth {{ qdevicesrv_priv[0] }} -u hacluster -p {{ hacluster_user_pass }}
+  register: drm_qdev_auth
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: qdevice kümeye ekleniyor
+  ansible.builtin.command: >
+    pcs quorum device add model net host={{ qdevicesrv_priv[0] }} algorithm=ffsplit
+  register: drm_qdev_add
+  ignore_errors: true
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
+- name: Stonith etkinleştiriliyor
+  ansible.builtin.command: pcs property set stonith-enabled=true
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+  notify:
+    - restart corosync-qdevice

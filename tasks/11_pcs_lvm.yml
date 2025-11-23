@@ -1,0 +1,76 @@
+---
+- name: DLM kaynağı oluşturuluyor
+  ansible.builtin.command: >
+    pcs resource create dlm ocf:pacemaker:controld
+    op monitor interval=30s on-fail=fence
+    --group=lock_group
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+  ignore_errors: true
+
+- name: lvmlockd kaynağı oluşturuluyor
+  ansible.builtin.command: >
+    pcs resource create lvmlockd ocf:heartbeat:lvmlockd
+    op monitor interval=30s on-fail=fence
+    --group=lock_group
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+  ignore_errors: true
+
+- name: lock_group kaynağı klonlanıyor
+  ansible.builtin.command: >
+    pcs resource clone lock_group interleave=true
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+  ignore_errors: true
+
+- name: lvm_vg_pgsql kaynağı oluşturuluyor
+  ansible.builtin.command: >
+    pcs resource create lvm_vg_pgsql LVM-activate
+    vgname=vg_pgsql vg_access_mode=system_id
+    --group=pgsql
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+  ignore_errors: true
+
+- name: fs_pgsql kaynağı oluşturuluyor
+  ansible.builtin.command: >
+    pcs resource create fs_pgsql Filesystem
+    device=/dev/vg_pgsql/lv_pgsql
+    directory=/var/lib/pgsql
+    fstype=xfs
+    --group=pgsql
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+  ignore_errors: true
+
+- name: lvm_vg_wal kaynagı oluşturuluyor
+  ansible.builtin.command: >
+    pcs resource create lvm_vg_wal LVM-activate
+    vgname=vg_wal vg_access_mode=system_id
+    --group=pgsql
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+  ignore_errors: true
+
+- name: fs_wal kaynağı oluşturuluyor
+  ansible.builtin.command: >
+    pcs resource create fs_wal Filesystem
+    device=/dev/vg_wal/lv_wal
+    directory=/wal
+    fstype=xfs
+    --group=pgsql
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+  ignore_errors: true
+
+- name: lvm_vg_tbs kaynağı oluşturuluyor
+  ansible.builtin.command: >
+    pcs resource create lvm_vg_tbs LVM-activate
+    vgname=vg_tbs vg_access_mode=system_id
+    --group=pgsql
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+  ignore_errors: true
+
+- name: fs_tbs kaynağı oluşturuluyor
+  ansible.builtin.command: >
+    pcs resource create fs_tbs Filesystem
+    device=/dev/vg_tbs/lv_tbs
+    directory=/tbs
+    fstype=xfs
+    --group=pgsql
+  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+  ignore_errors: true

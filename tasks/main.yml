@@ -1,0 +1,15 @@
+---
+- import_tasks: 00_common.yml
+- import_tasks: 01_packages.yml
+- import_tasks: 02_configuration.yml
+- import_tasks: 03_lvm.yml
+- import_tasks: 04_psql.yml
+- import_tasks: 05_tuned.yml
+- import_tasks: 06_cluster.yml
+- import_tasks: 07_qdevice.yml
+- import_tasks: 08_fence.yml
+- import_tasks: 09_pcs_ip.yml
+- import_tasks: 10_pcs_timeout.yml
+- import_tasks: 11_pcs_lvm.yml
+- import_tasks: 12_pcs_pgsql.yml
+- import_tasks: 13_pcs_smtp.yml
