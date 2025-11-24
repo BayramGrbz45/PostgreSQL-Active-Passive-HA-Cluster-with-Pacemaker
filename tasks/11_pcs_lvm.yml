@@ -21,56 +21,26 @@
   delegate_to: "{{ groups['pgsqlsrv'][0] }}"
   ignore_errors: true
 
-- name: lvm_vg_pgsql kaynağı oluşturuluyor
+- name: LVM VG kaynaklarını oluştur
   ansible.builtin.command: >
-    pcs resource create lvm_vg_pgsql LVM-activate
-    vgname=vg_pgsql vg_access_mode=system_id
+    pcs resource create lvm_vg_{{ item.name }} LVM-activate
+    vgname=vg_{{ item.name }} vg_access_mode=system_id
     --group=pgsql
+  loop: "{{ db_volumes }}"
+  loop_control:
+    label: "{{ item.name }}"
   delegate_to: "{{ groups['pgsqlsrv'][0] }}"
   ignore_errors: true
 
-- name: fs_pgsql kaynağı oluşturuluyor
+- name: Filesystem kaynaklarını oluştur
   ansible.builtin.command: >
-    pcs resource create fs_pgsql Filesystem
-    device=/dev/vg_pgsql/lv_pgsql
-    directory=/var/lib/pgsql
+    pcs resource create fs_{{ item.name }} Filesystem
+    device=/dev/vg_{{ item.name }}/lv_{{ item.name }}
+    directory={{ item.mountpoint }}
     fstype=xfs
     --group=pgsql
-  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
-  ignore_errors: true
-
-- name: lvm_vg_wal kaynagı oluşturuluyor
-  ansible.builtin.command: >
-    pcs resource create lvm_vg_wal LVM-activate
-    vgname=vg_wal vg_access_mode=system_id
-    --group=pgsql
-  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
-  ignore_errors: true
-
-- name: fs_wal kaynağı oluşturuluyor
-  ansible.builtin.command: >
-    pcs resource create fs_wal Filesystem
-    device=/dev/vg_wal/lv_wal
-    directory=/wal
-    fstype=xfs
-    --group=pgsql
-  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
-  ignore_errors: true
-
-- name: lvm_vg_tbs kaynağı oluşturuluyor
-  ansible.builtin.command: >
-    pcs resource create lvm_vg_tbs LVM-activate
-    vgname=vg_tbs vg_access_mode=system_id
-    --group=pgsql
-  delegate_to: "{{ groups['pgsqlsrv'][0] }}"
-  ignore_errors: true
-
-- name: fs_tbs kaynağı oluşturuluyor
-  ansible.builtin.command: >
-    pcs resource create fs_tbs Filesystem
-    device=/dev/vg_tbs/lv_tbs
-    directory=/tbs
-    fstype=xfs
-    --group=pgsql
+  loop: "{{ db_volumes }}"
+  loop_control:
+    label: "{{ item.name }}"
   delegate_to: "{{ groups['pgsqlsrv'][0] }}"
   ignore_errors: true

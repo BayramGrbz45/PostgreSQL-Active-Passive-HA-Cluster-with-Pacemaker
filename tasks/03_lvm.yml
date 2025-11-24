@@ -16,7 +16,6 @@
   ansible.builtin.lineinfile:
     path: /etc/lvm/lvm.conf
     regex: '^\s*#?\s*auto_activation_volume_list\s*='
-#    line: '    auto_activation_volume_list = [ "rhel", "vg_pgsql", "vg_wal", "vg_tbs" ]'
     line: '    auto_activation_volume_list = [ "rhel" ]'
 
 - name: Verify LVM system ID matches hostname

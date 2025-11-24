@@ -8,10 +8,12 @@
 - name: pgsql servisi oluşturuluyor
   ansible.builtin.command: >
     pcs resource create pgsqlsvc ocf:heartbeat:pgsql
-    pgdata="/var/lib/pgsql/{{ pg_version }}/data"
+    pgdata="{{ pgsql_mount }}/{{ pg_version }}/data"
     pgctl="/usr/pgsql-{{ pg_version }}/bin/pg_ctl"
     --group=pgsql
   when: "'pgsqlsvc' not in pcs_resource_config.stdout"
+  vars:
+    pgsql_mount: "{{ (db_volumes | selectattr('name','equalto','pgsql') | first).mountpoint }}"
   delegate_to: "{{ groups['pgsqlsrv'][0] }}"
 
 - name: pcs constraint --full durumu kontrol ediliyor

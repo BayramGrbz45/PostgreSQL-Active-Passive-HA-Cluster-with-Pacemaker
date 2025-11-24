@@ -37,5 +37,5 @@
 - name: PostgreSQL initdb start
   ansible.builtin.command:
     cmd: "/usr/pgsql-{{ pg_version }}/bin/postgresql-{{ pg_version }}-setup initdb"
-    creates: "/var/lib/pgsql/{{ pg_version }}/data/PG_VERSION"
+    creates: "{{ (db_volumes | selectattr('name','equalto','pgsql') | first).mountpoint }}/{{ pg_version }}/data/PG_VERSION"
   delegate_to: "{{ groups['pgsqlsrv'][0] }}"
