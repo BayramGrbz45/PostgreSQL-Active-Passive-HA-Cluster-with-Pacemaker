@@ -1,34 +1,35 @@
 ---
-- name: PostgreSQL tuned profili için dizin oluşturuluyor
-  ansible.builtin.file:
-    path: "/etc/tuned/tuned.postgresql"
-    state: directory
-    recurse: true
-    owner: root
-    group: root
-    mode: '0755'
-    setype: tuned_rw_etc_t
-
-- name: PostgreSQL için hugepages
-  ansible.builtin.set_fact:
-    postgresql_tuned_hugepages: >-
-      {{ (((ansible_facts.memtotal_mb | int) * 1024 * 0.50) / 2048) | int }}
-  notify:
-    - restart tuned
-
-- name: PostgreSQL tuned profili kopyalanıyor
-  ansible.builtin.template:
-    src: tuned.postgresql.j2
-    dest: "/etc/tuned/tuned.postgresql/tuned.conf"
-    owner: root
-    group: root
-    mode: '0644'
-    setype: tuned_etc_t
-  notify:
-    - postgresql tuned profile
-
-- name: Aktif tuned profilinin sorgulanması
-  ansible.builtin.command: /usr/sbin/tuned-adm active
-  register: tuned_active
-  changed_when: false
-  failed_when: tuned_active.rc not in [0, 1]
+# Performans
+#- name: PostgreSQL tuned profili için dizin oluşturuluyor
+#  ansible.builtin.file:
+#    path: "/etc/tuned/tuned.postgresql"
+#    state: directory
+#    recurse: true
+#    owner: root
+#    group: root
+#    mode: '0755'
+#    setype: tuned_rw_etc_t
+#
+#- name: PostgreSQL için hugepages
+#  ansible.builtin.set_fact:
+#    postgresql_tuned_hugepages: >-
+#      {{ (((ansible_facts.memtotal_mb | int) * 1024 * 0.50) / 2048) | int }}
+#  notify:
+#    - restart tuned
+#
+#- name: PostgreSQL tuned profili kopyalanıyor
+#  ansible.builtin.template:
+#    src: tuned.postgresql.j2
+#    dest: "/etc/tuned/tuned.postgresql/tuned.conf"
+#    owner: root
+#    group: root
+#    mode: '0644'
+#    setype: tuned_etc_t
+#  notify:
+#    - postgresql tuned profile
+#
+#- name: Aktif tuned profilinin sorgulanması
+#  ansible.builtin.command: /usr/sbin/tuned-adm active
+#  register: tuned_active
+#  changed_when: false
+#  failed_when: tuned_active.rc not in [0, 1]
