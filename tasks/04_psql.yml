@@ -12,25 +12,26 @@
   notify:
     - stop postgresql
 
-- name: /var/lib/pgsql dizininin izinlerini ayarla
+- name: PostgreSQL veri dizinlerinin (pgsql, tbs, wal) izinlerini ayarla
   ansible.builtin.file:
-    path: /var/lib/pgsql
+    path: "{{ item.mountpoint }}"
     state: directory
     owner: postgres
     group: postgres
     mode: "0770"
+  loop: "{{ db_volumes }}"
   delegate_to: "{{ groups['pgsqlsrv'][0] }}"
 
-- name: tbs ve wal dizinlerinin izinlerini ayarla
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    owner: postgres
-    group: postgres
-    mode: "0770"
-  loop:
-    - /tbs
-    - /wal
+- name: Oluşturulan Mantıksal Hacimleri (LV) Mount Et
+  ansible.posix.mount:
+    path: "{{ item.mountpoint }}"
+    src: "/dev/vg_{{ item.name }}/lv_{{ item.name }}"
+    fstype: xfs
+    state: mounted
+    opts: defaults,noatime
+  loop: "{{ db_volumes }}"
+  loop_control:
+    label: "Mount: {{ item.mountpoint }} from /dev/vg_{{ item.name }}/lv_{{ item.name }}"
   delegate_to: "{{ groups['pgsqlsrv'][0] }}"
 
 - name: PostgreSQL initdb start
