@@ -27,7 +27,7 @@
     path: "{{ item.mountpoint }}"
     src: "/dev/vg_{{ item.name }}/lv_{{ item.name }}"
     fstype: xfs
-    state: mounted
+    state: ephemeral
     opts: defaults,noatime
   loop: "{{ db_volumes }}"
   loop_control:
@@ -38,4 +38,5 @@
   ansible.builtin.command:
     cmd: "/usr/pgsql-{{ pg_version }}/bin/postgresql-{{ pg_version }}-setup initdb"
     creates: "{{ (db_volumes | selectattr('name','equalto','pgsql') | first).mountpoint }}/{{ pg_version }}/data/PG_VERSION"
+
   delegate_to: "{{ groups['pgsqlsrv'][0] }}"
