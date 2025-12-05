@@ -2,20 +2,20 @@
 - name: Configure system_id_source to uname
   ansible.builtin.lineinfile:
     path: /etc/lvm/lvm.conf
-    regex: '^\s*system_id_source\s*='
+    regexp: '^\s*system_id_source\s*='
     line: '    system_id_source = "uname"'
     backup: true
 
-- name: Disable use_lvmlockd
+- name: use_lvmlockd
   ansible.builtin.lineinfile:
     path: /etc/lvm/lvm.conf
-    regex: '^\s*use_lvmlockd\s*='
-    line: '    use_lvmlockd = 0'
+    regexp: '^\s*use_lvmlockd\s*='
+    line: '    use_lvmlockd = 1'
 
 - name: Configure auto_activation_volume_list
   ansible.builtin.lineinfile:
     path: /etc/lvm/lvm.conf
-    regex: '^\s*#?\s*auto_activation_volume_list\s*='
+    regexp: '^\s*#?\s*auto_activation_volume_list\s*='
     line: '    auto_activation_volume_list = [ "rhel" ]'
 
 - name: Verify LVM system ID matches hostname
@@ -56,3 +56,4 @@
   loop_control:
     label: "FS: /dev/vg_{{ item.name }}/lv_{{ item.name }}"
   delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
