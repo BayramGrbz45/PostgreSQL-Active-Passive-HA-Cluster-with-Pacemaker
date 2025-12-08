@@ -68,10 +68,11 @@
     - { name: 'kernel.shmmax', value: '17179869184' } 
     - { name: 'kernel.shmall', value: '4194304' }
 
-- name: Toplam RAM'in %90'ını G cinsinden hesapla
+- name: Hesapla
   set_fact:
     pacemaker_memorylimit: "{{ (((ansible_facts.memtotal_mb | int) * 0.90) / 1024) | round(method='ceil') | int }}G"
-
+    pacemaker_cpuquota: "{{ (ansible_facts.processor_vcpus | int * 0.80 * 100) | int }}%"
+   
 - name: Pacemaker CGroup kaynak limitlerini yapılandır (CPUQuota, MemoryLimit)
   ini_file:
     path: /etc/systemd/system/pacemaker.service.d/resource.conf
@@ -82,7 +83,7 @@
   loop:
     - { option: 'CPUAccounting', value: 'yes' }
     - { option: 'MemoryAccounting', value: 'yes' }
-    - { option: 'CPUQuota', value: '1000%' }
+    - { option: 'CPUQuota', value: "{{ pacemaker_cpuquota }}" }
     - { option: 'MemoryLimit', value: "{{ pacemaker_memorylimit }}" }
     - { option: 'LimitNOFILE', value: '65535' }
     - { option: 'LimitNPROC', value: '65535' }
@@ -90,6 +91,11 @@
     - systemd daemon reload
     - restart pacemaker
 
+- name: Hesapla
+  set_fact:
+    corosyncr_memorylimit: "{{ (((ansible_facts.memtotal_mb | int) * 0.10) / 1024) | round(method='ceil') | int }}G"
+    corosyncr_cpuquota: "{{ (ansible_facts.processor_vcpus | int * 0.10 * 100) | int }}%"
+    
 - name: Corosync CGroup kaynak limitlerini yapılandır (CPUQuota)
   ini_file:
     path: /etc/systemd/system/corosync.service.d/resource.conf
@@ -99,13 +105,19 @@
     create: yes
   loop:
     - { option: 'CPUAccounting', value: 'yes' }
-    - { option: 'CPUQuota', value: '100%' }
+    - { option: 'CPUQuota', value: "{{ corosyncr_cpuquota }}" }
+    - { option: 'MemoryLimit', value: "{{ corosyncr_memorylimit }}" }
     - { option: 'LimitNOFILE', value: '65535' }
     - { option: 'LimitNPROC', value: '65535' }
   notify:
     - systemd daemon reload
     - restart corosync-qdevice
 
+- name: Hesapla
+  set_fact:
+    user_memorylimit: "{{ (((ansible_facts.memtotal_mb | int) * 0.10) / 1024) | round(method='ceil') | int }}G"
+    user_cpuquota: "{{ (ansible_facts.processor_vcpus | int * 0.10 * 100) | int }}%"
+    
 - name: user.slice CGroup kaynak limitlerini yapılandır (Kalıcı)
   ini_file:
     path: /etc/systemd/system/user.slice.d/resource.conf
@@ -116,7 +128,8 @@
   loop:
     - { option: 'CPUAccounting', value: 'yes' }
     - { option: 'MemoryAccounting', value: 'yes' }
-    - { option: 'CPUQuota', value: '100%' }
-    - { option: 'MemoryLimit', value: '1G' }
+    - { option: 'CPUQuota', value: "{{ user_cpuquota }}" }
+    - { option: 'MemoryLimit', value: "{{ user_memorylimit }}" }
   notify:
     - systemd daemon reload
+
