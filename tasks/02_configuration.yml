@@ -9,25 +9,17 @@
   notify:
     - restart systemd-journald
 
-- name: DefaultLimitNOFILE Edit
+- name: Configure systemd default limits
   ansible.builtin.lineinfile:
     path: /etc/systemd/system.conf
-    regexp: '^#?DefaultLimitNOFILE='
-    line: 'DefaultLimitNOFILE=524288'
+    regexp: "^#?{{ item.key }}="
+    line: "{{ item.key }}={{ item.value }}"
     state: present
     backup: true
-  notify:
-    - systemd daemon reload
-
-- name: DefaultLimitNPROC Edit
-  ansible.builtin.lineinfile:
-    path: /etc/systemd/system.conf
-    regexp: '^#?DefaultLimitNPROC='
-    line: 'DefaultLimitNPROC=524288'
-    state: present
-    backup: true
-  notify:
-    - systemd daemon reload
+  loop:
+    - { key: 'DefaultLimitNOFILE', value: '524288' }
+    - { key: 'DefaultLimitNPROC', value: '524288' }
+  notify: systemd daemon reload
 
 - name: Deploy chrony.conf
   ansible.builtin.template:
@@ -39,9 +31,10 @@
   notify:
     - restart chronyd
 
-- name: smtp relay
-  ansible.builtin.command:
-    cmd: postconf -e "relayhost={{ relay_host }}"
+- name: Configure SMTP relay
+  community.general.postconf:
+    name: relayhost
+    value: "{{ relay_host }}"
   notify:
     - restart postfix
 
@@ -79,4 +72,5 @@
 #    - "systemctl --runtime set-property user.slice CPUQuota=100%"
 #    - "systemctl --runtime set-property user.slice MemoryAccounting=yes"
 #    - "systemctl --runtime set-property user.slice MemoryLimit=1G"
+
 
