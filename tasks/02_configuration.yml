@@ -9,18 +9,6 @@
   notify:
     - restart systemd-journald
 
-- name: Configure systemd default limits
-  ansible.builtin.lineinfile:
-    path: /etc/systemd/system.conf
-    regexp: "^#?{{ item.key }}="
-    line: "{{ item.key }}={{ item.value }}"
-    state: present
-    backup: true
-  loop:
-    - { key: 'DefaultLimitNOFILE', value: '524288' }
-    - { key: 'DefaultLimitNPROC', value: '524288' }
-  notify: systemd daemon reload
-
 - name: Deploy chrony.conf
   ansible.builtin.template:
     src: chrony.conf.j2
@@ -46,6 +34,11 @@
       {{ hostvars[h].ansible_host }} {{ h }}.{{ domain }} {{ h }} {{ h }}-priv
       {% endfor %}
 
+- name: Hesapla
+  set_fact:
+    shmmax_value: "{{ ((ansible_facts.memtotal_mb | int) * 0.50 * 1024 * 1024) | int }}"
+    shmall_value: "{{ (shmmax_value | int / 4096) | int }}"
+    
 - name: Configure critical kernel parameters for PostgreSQL performance
   sysctl:
     name: "{{ item.name }}"
@@ -65,8 +58,8 @@
     - { name: 'net.ipv4.tcp_max_syn_backlog', value: '4096' }
     - { name: 'net.ipv4.tcp_tw_reuse', value: '1' }
     - { name: 'net.ipv4.tcp_fin_timeout', value: '15' }
-    - { name: 'kernel.shmmax', value: '17179869184' } 
-    - { name: 'kernel.shmall', value: '4194304' }
+    - { name: 'kernel.shmmax', value: "{{ shmmax_value }}" }
+    - { name: 'kernel.shmall', value: "{{ shmall_value }}" }
 
 - name: Hesapla
   set_fact:
@@ -132,4 +125,5 @@
     - { option: 'MemoryLimit', value: "{{ user_memorylimit }}" }
   notify:
     - systemd daemon reload
+
 
