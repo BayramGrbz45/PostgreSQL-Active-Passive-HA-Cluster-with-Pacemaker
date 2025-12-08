@@ -46,6 +46,29 @@
       {{ hostvars[h].ansible_host }} {{ h }}.{{ domain }} {{ h }} {{ h }}-priv
       {% endfor %}
 
+- name: Configure critical kernel parameters for PostgreSQL performance
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+    sysctl_file: /etc/sysctl.d/99-postgresql.conf
+  loop:
+    - { name: 'vm.swappiness', value: '1' }
+    - { name: 'vm.dirty_expire_centisecs', value: '500' }
+    - { name: 'vm.dirty_writeback_centisecs', value: '250' }
+    - { name: 'vm.dirty_ratio', value: '10' }
+    - { name: 'vm.dirty_background_ratio', value: '3' }
+    - { name: 'vm.overcommit_memory', value: '2' }
+    - { name: 'vm.overcommit_ratio', value: '95' }
+    - { name: 'net.core.somaxconn', value: '1024' }
+    - { name: 'net.ipv4.tcp_max_syn_backlog', value: '4096' }
+    - { name: 'net.ipv4.tcp_tw_reuse', value: '1' }
+    - { name: 'net.ipv4.tcp_fin_timeout', value: '15' }
+    - { name: 'kernel.shmmax', value: '17179869184' } 
+    - { name: 'kernel.shmall', value: '4194304' }
+
+    
 ## Performance Config
 #- name: Toplam RAM'in %90'ını G cinsinden hesapla
 #  set_fact:
@@ -72,5 +95,6 @@
 #    - "systemctl --runtime set-property user.slice CPUQuota=100%"
 #    - "systemctl --runtime set-property user.slice MemoryAccounting=yes"
 #    - "systemctl --runtime set-property user.slice MemoryLimit=1G"
+
 
 
