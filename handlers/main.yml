@@ -50,10 +50,15 @@
     enabled: true
     state: restarted
 
-- name: postgresql tuned profile
-  ansible.builtin.command:
-    cmd: "/usr/sbin/tuned-adm profile tuned.postgresql"
+- name: postgresql tuned profile activate
+  ansible.builtin.command: /usr/sbin/tuned-adm profile postgresql-performance
 
+- name: enable disable-thp
+  ansible.builtin.systemd:
+    name: disable-thp
+    enabled: true
+    state: restarted
+    
 - name: restart corosync-qdevice
   ansible.builtin.service:
     name: corosync-qdevice
