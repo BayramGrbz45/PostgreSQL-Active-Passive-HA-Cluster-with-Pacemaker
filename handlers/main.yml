@@ -5,6 +5,12 @@
     enabled: true
     state: restarted
 
+- name: restart pacemaker
+  ansible.builtin.service:
+    name: pacemaker
+    enabled: true
+    state: restarted
+    
 - name: restart systemd-journald
   ansible.builtin.systemd:
     name: systemd-journald
@@ -64,3 +70,4 @@
     name: corosync-qdevice
     enabled: true
     state: restarted
+
