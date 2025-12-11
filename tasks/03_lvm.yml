@@ -10,7 +10,7 @@
   ansible.builtin.lineinfile:
     path: /etc/lvm/lvm.conf
     regexp: '^\s*use_lvmlockd\s*='
-    line: '    use_lvmlockd = 1'
+    line: '    use_lvmlockd = 0'
 
 - name: Configure auto_activation_volume_list
   ansible.builtin.lineinfile:
@@ -56,4 +56,5 @@
   loop_control:
     label: "FS: /dev/vg_{{ item.name }}/lv_{{ item.name }}"
   delegate_to: "{{ groups['pgsqlsrv'][0] }}"
+
 
