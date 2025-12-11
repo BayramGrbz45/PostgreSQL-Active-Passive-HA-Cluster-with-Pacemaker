@@ -11,7 +11,7 @@
 
 - name: Deploy chrony.conf
   ansible.builtin.template:
-    src: chrony.conf.j2
+    src: ../template/chrony.conf.j2
     dest: /etc/chrony.conf
     owner: root
     group: root
@@ -125,5 +125,6 @@
     - { option: 'MemoryLimit', value: "{{ user_memorylimit }}" }
   notify:
     - systemd daemon reload
+
 
 
